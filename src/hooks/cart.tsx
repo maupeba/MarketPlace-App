@@ -30,7 +30,13 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      const storagedProducts = await AsyncStorage.getItem(
+        '@MarketPlace:products',
+      );
+
+      if (storagedProducts) {
+        setProducts([...JSON.parse(storagedProducts)]);
+      }
     }
 
     loadProducts();
@@ -38,12 +44,17 @@ const CartProvider: React.FC = ({ children }) => {
 
   const increment = useCallback(
     async id => {
-      setProducts(
-        products.map(product =>
-          product.id === id
-            ? { ...product, quantity: product.quantity + 1 }
-            : product,
-        ),
+      const newProducts = products.map(product =>
+        product.id === id
+          ? { ...product, quantity: product.quantity + 1 }
+          : product,
+      );
+
+      setProducts(newProducts);
+
+      await AsyncStorage.setItem(
+        '@MarketPlace:products',
+        JSON.stringify(newProducts),
       );
     },
     [products],
@@ -51,20 +62,17 @@ const CartProvider: React.FC = ({ children }) => {
 
   const decrement = useCallback(
     async id => {
-      const productInCart = products.find(item => item.id === id);
-
-      if (productInCart?.quantity === 1) return;
-
-      setProducts(
-        products.map(product =>
-          product.id === id
-            ? { ...product, quantity: product.quantity - 1 }
-            : product,
-        ),
+      const newProducts = products.map(product =>
+        product.id === id
+          ? { ...product, quantity: product.quantity - 1 }
+          : product,
       );
-      await AsyncStorage.mergeItem(
+
+      setProducts(newProducts);
+
+      await AsyncStorage.setItem(
         '@MarketPlace:products',
-        JSON.stringify(products),
+        JSON.stringify(newProducts),
       );
     },
     [products],
@@ -72,14 +80,10 @@ const CartProvider: React.FC = ({ children }) => {
 
   const addToCart = useCallback(
     async product => {
-      const productExist = products.find(item => item.title === product.title);
+      const productExists = products.find(item => item.id === product.id);
 
-      if (productExist) {
+      if (productExists) {
         increment(product.id);
-        await AsyncStorage.mergeItem(
-          '@MarketPlace:products',
-          JSON.stringify(products),
-        );
         return;
       }
       setProducts([...products, { ...product, quantity: 1 }]);
