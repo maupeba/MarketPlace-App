@@ -36,27 +36,61 @@ const CartProvider: React.FC = ({ children }) => {
     loadProducts();
   }, []);
 
-  const addToCart = useCallback(
-    async product => {
-      // TODO ADD A NEW ITEM TO THE CART
-      const productExist = products.find(item => item.title === product.title);
-
-      if (productExist) return;
-
-      setProducts([...products, { ...product, quantity: 1 }]);
-
-      console.log(products);
+  const increment = useCallback(
+    async id => {
+      setProducts(
+        products.map(product =>
+          product.id === id
+            ? { ...product, quantity: product.quantity + 1 }
+            : product,
+        ),
+      );
     },
     [products],
   );
 
-  const increment = useCallback(async id => {
-    // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+  const decrement = useCallback(
+    async id => {
+      const productInCart = products.find(item => item.id === id);
 
-  const decrement = useCallback(async id => {
-    // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+      if (productInCart?.quantity === 1) return;
+
+      setProducts(
+        products.map(product =>
+          product.id === id
+            ? { ...product, quantity: product.quantity - 1 }
+            : product,
+        ),
+      );
+      await AsyncStorage.mergeItem(
+        '@MarketPlace:products',
+        JSON.stringify(products),
+      );
+    },
+    [products],
+  );
+
+  const addToCart = useCallback(
+    async product => {
+      const productExist = products.find(item => item.title === product.title);
+
+      if (productExist) {
+        increment(product.id);
+        await AsyncStorage.mergeItem(
+          '@MarketPlace:products',
+          JSON.stringify(products),
+        );
+        return;
+      }
+      setProducts([...products, { ...product, quantity: 1 }]);
+
+      await AsyncStorage.setItem(
+        '@MarketPlace:products',
+        JSON.stringify(products),
+      );
+    },
+    [products, increment],
+  );
 
   const value = React.useMemo(
     () => ({ addToCart, increment, decrement, products }),
