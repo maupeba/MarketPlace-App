@@ -20,6 +20,7 @@ const AppRoutes: React.FC = () => (
     }}
     initialRouteName="Dashboard"
   >
+    
     <App.Screen
       options={{
         headerShown: true,
